@@ -123,6 +123,8 @@ const { assert, expect } = require("chai")
                 await expect(vrfCoordinatorV2Mock.fulfillRandomWords(1, raffle.address)
                 ).to.be.revertedWith("nonexistent request")
             })
+            // Masive Test 
+            it("picks a winner, reset the lottery, and sends money")
             
         })
     })
