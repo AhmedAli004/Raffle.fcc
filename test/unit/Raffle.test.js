@@ -9,12 +9,13 @@ const { assert, expect } = require("chai")
         let raffle, vrfCoordinatorV2Mock, raffleEnteranceFee, deployer, interval
         const chaindId = network.config.chainId
         beforeEach(async function () {
-            deployer = (await getNamedAccounts()).deployer
             await deployments.fixture(["all"])
             raffle = await ethers.getContract("Raffle", deployer)
             vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock", deployer)
             raffleEnteranceFee = await raffle.getEntranceFee();
             interval = await raffle.getInterval()
+            accounts = await ethers.getSigners()
+            deployer = accounts[0]
         })
 
         describe("constructor",  function () {
@@ -35,7 +36,7 @@ const { assert, expect } = require("chai")
             it("records players when they enter", async function () {
                 await raffle.enterRaffle({value: raffleEnteranceFee})
                 const playerFromContract = await raffle.getPlayer(0)
-                assert.equal(playerFromContract, deployer)
+                assert.equal(playerFromContract, deployer.address)
             })
             it("emits event on enter", async function () {
 
@@ -124,7 +125,56 @@ const { assert, expect } = require("chai")
                 ).to.be.revertedWith("nonexistent request")
             })
             // Masive Test 
-            it("picks a winner, reset the lottery, and sends money")
+            it("picks a winner, reset the lottery, and sends money", async () => {
+                const additionalEnterants = 3
+                const startingAccountIndex = 1 // deployer = 0
+                for(
+                    let i = startingAccountIndex; 
+                    i < startingAccountIndex + additionalEnterants;
+                    i++
+                ) {
+                    const accountConnectedRaffle = raffle.connect(accounts[i])
+                    await accountConnectedRaffle.enterRaffle ({ value: raffleEnteranceFee })
+                }
+                const startingTimeStamp = await raffle.getLastTimeStamp() 
+
+                // performUpkeep (mock being chainlink keepers)
+                // fulfilRandomWords (mock being the chainlink VRF)
+                // We will have to wait for the fulfillRandomWords to be called
+                await new Promise(async (resolve, reject) => {
+                    raffle.once("WinnerPicked",async () => {
+                        console.log("Found the event!!")
+                        try {
+                        
+                            const  recentWinner = await raffle.getRecentWinner()
+                            const raffleState = await raffle.getRaffleState()
+                            const endingTimeStamp = await raffle.getLastTimeStamp
+                            const numPlayers = await raffle.getNumberOfPlayers()
+                            const winnerEndingBalance = await accounts[1].getBalance()
+                            assert.equal(numPlayers.toString(), "0")
+                            assert.equal(raffleState.toString(), "0")
+                            assert(endingTimeStamp > startingTimeStamp)
+                            assert(winnerEndingBalance.toString(),
+                                   winnerStartingBalance
+                                   .add(raffleEnteranceFee
+                                    .mul(additionalEnterants)
+                                    .add(raffleEnteranceFee).toString())
+                            )
+                            
+                        } catch (e) {
+                            reject (e)
+                        }
+                        resolve()
+                    })
+                    const tx = await raffle.performUpkeep([])
+                    const txReceipt = await tx.wait(1)
+                    const winnerStartingBalance = await accounts[1].getBalance()
+                    await vrfCoordinatorV2Mock.fulfillRandomWords(
+                        txReceipt.events[1].args.requestId,
+                        raffle.address
+                    )
+                })
+            })
             
         })
     })

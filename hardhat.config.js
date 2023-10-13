@@ -7,8 +7,8 @@ require("hardhat-contract-sizer")
 require("dotenv").config()
 require("@nomiclabs/hardhat-ethers");
 
-
-const GOERLI_RPC_URL = process.env.GOERLI_RPC_URL || "https://eth-rinkeby"
+const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || "https://eth-sepolia"
+const GOERLI_RPC_URL = process.env.GOERLI_RPC_URL || "https://eth-goerli"
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "0xkey"
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "key"
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "key"
@@ -21,6 +21,13 @@ module.exports = {
       chainId: 31337,
       blockConfirmations: 1,
     },
+    sepolia: {
+      chainId: 11155111,
+      blockConfirmations: 6,
+      url: SEPOLIA_RPC_URL,
+      accounts: [PRIVATE_KEY],
+      saveDeployments: true,
+    },
     goerli: {
       chaindId: 5,
       blockConfirmations: 6,
@@ -28,6 +35,11 @@ module.exports = {
       accounts: [PRIVATE_KEY],
     }
   
+  },
+  etherscan: {
+    apiKey: {
+      sepolia: ETHERSCAN_API_KEY
+    }
   },
   gasReporter: {
     enabled: false,

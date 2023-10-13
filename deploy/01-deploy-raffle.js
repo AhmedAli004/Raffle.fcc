@@ -8,10 +8,10 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
-    const vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
     let vrfCoordinatorV2Address, subscriptionId
 
-    if (developmentChains.includes(network.name)) {
+    if (chainId == 31337) {
+        const vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
         vrfCoordinatorV2Address = vrfCoordinatorV2Mock.address
         const transactionResponse = await vrfCoordinatorV2Mock.createSubscription()
         const transactionReceipt = await transactionResponse.wait(1)
@@ -50,6 +50,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     })
 
     if (developmentChains.includes(network.name)) {
+        const vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
         await vrfCoordinatorV2Mock.addConsumer(subscriptionId.toNumber(), raffle.address)
     }
 
@@ -57,23 +58,6 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         log("Verifying.......")
         await verify(raffle.address, args)
     }
-    const { run } = require("hardhat")
-    async function verify(contractAddress, args) {
-        console.log("Verifying ...........")
-        try {
-            await run("verify:verify", {
-                address: contractAddress,
-                constructorArguments: args,
-            })
-        } catch (e) {
-            if (e.message.toLowerCase().includes("already verified")) {
-                console.log("ALready Verified")
-            } else {
-                console.log(e)
-            }
-        }
-    }
-    module.exports = { verify }
     
     log("---------------------------------------")
 }  
